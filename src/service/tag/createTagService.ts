@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { TagRepository } from "@/repository/tag.repository";
+import { TagRepository } from "@/repository/TagRepository";
 import type { CreateTagInput, Tag } from "@/types/todo";
 
 export async function createTagService(input: CreateTagInput): Promise<Tag> {
-  return await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const tagRepo = new TagRepository(tx);
 
     // 同じ名前のタグが既に存在しないか確認
@@ -12,6 +12,6 @@ export async function createTagService(input: CreateTagInput): Promise<Tag> {
       throw new Error(`Tag with name "${input.name}" already exists`);
     }
 
-    return await tagRepo.create(input);
+    return tagRepo.create(input);
   });
 }

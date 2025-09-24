@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { TagRepository } from "@/repository/tag.repository";
-import { TodoRepository } from "@/repository/todo.repository";
+import { TagRepository } from "@/repository/TagRepository";
+import { TodoRepository } from "@/repository/TodoRepository";
 import type { CreateTodoInput, Todo } from "@/types/todo";
 
 export async function createTodoService(input: CreateTodoInput): Promise<Todo> {
-  return await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const todoRepo = new TodoRepository(tx);
     const tagRepo = new TagRepository(tx);
 
@@ -18,6 +18,6 @@ export async function createTodoService(input: CreateTodoInput): Promise<Todo> {
       }
     }
 
-    return await todoRepo.create(input);
+    return todoRepo.create(input);
   });
 }

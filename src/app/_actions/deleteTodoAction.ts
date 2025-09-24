@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { deleteTodoService } from "@/service/deleteTodoService";
+import { deleteTodoService } from "@/service/todo/deleteTodoService";
 
 const DeleteTodoSchema = z.object({
   id: z.string().min(1, "IDが指定されていません"),

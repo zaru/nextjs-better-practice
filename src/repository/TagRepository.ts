@@ -10,7 +10,7 @@ export class TagRepository {
   constructor(private readonly tx: PrismaClient | PrismaTransaction) {}
 
   async list(): Promise<Tag[]> {
-    return await this.tx.tag.findMany({
+    return this.tx.tag.findMany({
       select: {
         id: true,
         name: true,
@@ -24,7 +24,7 @@ export class TagRepository {
   }
 
   async find(id: string): Promise<Tag | null> {
-    return await this.tx.tag.findUnique({
+    return this.tx.tag.findUnique({
       select: {
         id: true,
         name: true,
@@ -36,7 +36,7 @@ export class TagRepository {
   }
 
   async findByName(name: string): Promise<Tag | null> {
-    return await this.tx.tag.findUnique({
+    return this.tx.tag.findUnique({
       select: {
         id: true,
         name: true,
@@ -48,7 +48,7 @@ export class TagRepository {
   }
 
   async create(input: CreateTagInput): Promise<Tag> {
-    return await this.tx.tag.create({
+    return this.tx.tag.create({
       data: {
         name: input.name,
       },
@@ -62,7 +62,7 @@ export class TagRepository {
   }
 
   async update(id: string, input: UpdateTagInput): Promise<Tag> {
-    return await this.tx.tag.update({
+    return this.tx.tag.update({
       where: { id },
       data: {
         name: input.name,

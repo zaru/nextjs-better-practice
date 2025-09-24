@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { deleteTagService } from "@/service/deleteTagService";
+import { deleteTagService } from "@/service/tag/deleteTagService";
 
 const DeleteTagSchema = z.object({
   id: z.string().min(1, "IDが指定されていません"),

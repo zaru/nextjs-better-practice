@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { CreateTodoModal } from "@/components/todo/CreateTodoModal";
-import { TodoList } from "@/components/todo/TodoList";
-import { TodoSearchForm } from "@/components/todo/TodoSearchForm";
-import { fetchTagsService } from "@/service/fetchTagsService";
-import { fetchTodosService } from "@/service/fetchTodosService";
+import { CreateTodoModal } from "@/app/_components/todo/CreateTodoModal";
+import { TodoList } from "@/app/_components/todo/TodoList";
+import { TodoSearchForm } from "@/app/_components/todo/TodoSearchForm";
+import { fetchTagsService } from "@/service/tag/fetchTagsService";
+import { fetchTodosService } from "@/service/todo/fetchTodosService";
 import {
   type TodoFilter,
   type TodoSort,

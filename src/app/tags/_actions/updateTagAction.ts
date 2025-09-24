@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { updateTagService } from "@/service/updateTagService";
+import { updateTagService } from "@/service/tag/updateTagService";
 
 const UpdateTagSchema = z.object({
   id: z.string().min(1, "IDが指定されていません"),

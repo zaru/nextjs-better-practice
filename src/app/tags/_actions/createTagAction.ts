@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createTagService } from "@/service/createTagService";
+import { createTagService } from "@/service/tag/createTagService";
 
 const CreateTagSchema = z.object({
   name: z.string().min(1, "タグ名を入力してください"),

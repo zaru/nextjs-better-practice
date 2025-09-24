@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { updateTodoService } from "@/service/updateTodoService";
+import { updateTodoService } from "@/service/todo/updateTodoService";
 import { TodoStatus, type TodoStatusType } from "@/types/todo";
 
 const UpdateTodoSchema = z.object({

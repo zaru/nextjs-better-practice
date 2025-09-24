@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { CreateTagForm } from "@/components/tag/CreateTagForm";
-import { TagList } from "@/components/tag/TagList";
-import { fetchTagsService } from "@/service/fetchTagsService";
+import { CreateTagForm } from "@/app/tags/_components/CreateTagForm";
+import { TagList } from "@/app/tags/_components/TagList";
+import { fetchTagsService } from "@/service/tag/fetchTagsService";
 
 export default async function TagsPage(_props: PageProps<"/tags">) {
   const tags = await fetchTagsService();
