@@ -42,3 +42,5 @@ next-env.d.ts
 
 # AI
 .serena
+
+/src/generated/prisma
