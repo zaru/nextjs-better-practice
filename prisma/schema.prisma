@@ -10,3 +10,43 @@ datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
+
+model Todo {
+  id          String    @id @default(cuid())
+  content     String
+  status      TodoStatus @default(NOT_STARTED)
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  tags        TodoTag[]
+
+  @@map("todos")
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  todos     TodoTag[]
+
+  @@map("tags")
+}
+
+model TodoTag {
+  todoId String
+  tagId  String
+  todo   Todo   @relation(fields: [todoId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([todoId, tagId])
+  @@map("todo_tags")
+}
+
+enum TodoStatus {
+  NOT_STARTED    // 未着手
+  IN_PROGRESS    // 着手中
+  NOT_APPLICABLE // 対応しない
+  WAITING        // 確認待ち
+  COMPLETED      // 完了
+}

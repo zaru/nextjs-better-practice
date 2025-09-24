@@ -8,3 +8,4 @@
 
 - Better Auth
 - React Aria Components
+- Sentry
