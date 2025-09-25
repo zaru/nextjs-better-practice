@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { TagRepository } from "@/repository/TagRepository";
 
-export async function deleteTagService(id: string): Promise<void> {
+interface Params {
+  id: string;
+}
+export async function deleteTagService({ id }: Params): Promise<void> {
   return prisma.$transaction(async (tx) => {
     const tagRepo = new TagRepository(tx);
 

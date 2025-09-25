@@ -1,5 +1,7 @@
 # Next.jsベタープラクティス
 
+このドキュメントはNext.jsを使った開発をする際に、ガイドラインを示すことで開発チームの中で書き方のばらつきを抑え、保守性を保つことを目的としています。ベストな設計を追求するよりも現実的な利益を得られるバランスを目指しています。
+
 ## 前提
 
 以下のライブラリを組み合わせて開発する
@@ -23,7 +25,7 @@
 
 ### Repository
 
-- DB操作はRepository層を作る
+- DB操作や外部APIはRepository層を作る
   - Repository層ではDBや外部APIなどを直接操作する
   - RepositoryはDTOの役割も担っているため、SELECTのフィールドは必要最低限なものを明示的に指定
   - 関数を増やすのではなく汎用的なインターフェイスとする
@@ -31,19 +33,21 @@
     - 例：ブログ記事のカテゴリ情報は、原則一緒に利用するのでarticleRepo().find()ではカテゴリをJOINして返す
 - Prismaの自動生成された型は利用せず、明示的にモデルの型定義をする
   - 背景としては、DTOの役割も兼ねているため自動生成だと都度Omitする必要があり手間
-
+  - とはいえ悩み：Prisma型を利用するかどうか…
+    - https://www.prisma.io/docs/orm/prisma-client/type-safety
 - RepositoryではPrismaのトランザクションオブジェクトを受け取り、それを利用する
   - Repository自身ではトランザクション管理はしない
   - トランザクションはServiceの責務
-
 - Repositoryは操作対象リソース単位のファイルとする
   - 例：userRepo.ts / articleRepo.ts
-
 - 関数名は list / find / create / update / delete をベースとする
 - 効率を上げるために一括処理用の bulkCreate / bulkUpdate / bulkDelete などを作るのはOK
   - ただし、findById / findByEmail など関数が増え続けるような用途の狭い関数を作るのは禁止
   - なるべく汎用性の高い関数として設計をする
     - 例外として複雑度が上がるようであれば適宜関数を分割すること
+- Prismaの `$queryRaw` でSQLを直接実行することもOK
+  - その場合、必ず返り値をZodでパースすること
+  - また実データを使ったテストコードも必ず書くこと
 
 
 ### Service
@@ -54,7 +58,6 @@
 - Serviceは関数単位のファイルとする
   - 例：createUserService.ts / deleteArticleService.ts
   - また、ファイル名・関数名の最後にはServiceというSuffixを加える
-
 - 関数名はユースケースとして分かりやすい命名にする（長すぎるのは駄目）
 
 ### Mutation: ServerActions
@@ -64,21 +67,34 @@
   - ServerActionsから直接Repositoryは呼ばない
 - ServerActionsではビジネスロジックは記述しない
   - ビジネスロジックはServiceに任せる
-
 - ServerActionsは、MVCでいうところのControllerのような立ち位置で考える
   - ユーザからの入力を受け取り、必要なデータクレンジングをし、処理を呼び出し、レスポンスを返す
-
 - ServerActionsの引数は原則FormDataで統一する
   - `useActionState` と組み合わせて使うこと
-
-- ServerActionsをFormの `action` で呼び出す `<Form action={action}>` 
+  - 「いいね」などの機能の場合はボタンクリックでServerActionsを動かすためFormDataではなく任意の値でOK
+- ServerActionsはFormの `action` で呼び出す `<Form action={action}>` 
   - Formの `onSubmit` は利用禁止
+  - 「いいね」などの機能の場合は `onClick` で呼び出すのはOK
+- 必要に応じて完了後に画面更新をするため `revalidatePath` を使う
+- ファイルは関数単位で分割すること
+  - ファイル名は関数名と同じに統一すること
+  - 例：`createUser.ts` `function createUser()`
 
 
 ### Data Fetch: Server Component
 
-- ページコンポーネントはServerComponentとして動かし必要な情報はバックエンド側で取得する
-- ClientComponentからRouteHandlerをfetchして呼び出すのは原則禁止（例外あり）
+- 必要な情報は最上位のPageComponentでService関数から取得する
+- ネストが深いコンポーネントだけに必要なデータは、該当コンポーネント自身でデータ取得する
+  - この際、多くはClientComponentになっている。そのため直接Service関数は実行できない
+  - その場合は、素直に `fetch` 相当の処理をしてもOK
+    - ServerActionsでもデータフェッチは可能だがパフォーマンス上の懸念があるので使いすぎには注意（使うことはOK）
+    - ただし原則はServer ComponentからPropsで渡すのを守ること
+
+## エラーと例外
+
+- 原則、RepositoryとServiceではエラー時には例外を投げる
+- 利用する側（ServerActionsなど）で `try..catch` し適切なエラーハンドリングをする
+- いわゆるResult型は利用しない
 
 ## Component
 
@@ -88,11 +104,14 @@
   - 使うものは近い場所に配置する
   - Server Actionsは利用しているページの `_actions` ディレクトリに配置する
   - 部品コンポーネントは利用しているページの `_components` ディレクトリに配置する
-  - もし、複数の画面で利用するようなケースがあれば、トップディレクトリ `src/app/` に配置する
+    - もし、複数の画面で利用するようなケースがあれば、トップディレクトリ `src/components` に配置する
   - このルールはRepositoryとServiceは該当しない（この2つはトップディレクトリ配置）
 - ファイル名は関数名と同じにする
   - つまりcamelCaseで作成する（例：createUser.ts）
   - コンポーネントの場合はUpperCamelCaseとなる（例：UserList.tsx）
+- コンポーネントはなるべく小さく分割する
+  - 再レンダリングの影響範囲を小さくできる
+  - 小さくしすぎると保守が大変になるので意味のある単位にすること
 
 ### Layout / Page Component
 
@@ -101,6 +120,56 @@
 - Page Componentは必ずServer Componentにする
   - もしClientにする必要があれば別コンポーネントに切り出す
 
+### Client Component
+
+- クライアント側の状態管理は極力しない
+  - 状態管理ライブラリも導入しない
+  - クライアント側の状態が管理が複雑になればなるほど、開発がつらくなる
+- `useState` `useEffect` `useRef` を書かざるをえないときは立ち止まって設計を見直す
+  - 素朴な処理であれば書かずとも表現できることが多い
+  - ただし、使うのが悪ではないので必要であればOK
+
+## 認証・認可
+
+- 認証と認可は、必ずPageComponentで行う
+  - Layoutでセッション情報を取得して特定の処理をすること自体はOK
+  - ただし、Layoutのみで制御するのは禁止
+  - 必ず該当ページでチェックをすること
+- また、ServerActions・RouteHandlerでも必ず認証・認可を確認すること
+- MiddlewareでログインチェックすることはOKだが、これも補助的に捉える
+- 認証と認可のチェックは汎用的な共通関数を用意すること
+  - ロジックが分散することを防ぐ
+  - 例
+    - `requireLogin()` : 認証済み確認
+    - `hasPermission({ リソース, アクション, セッション })` : 操作可能か
+- 悩み：認可はService関数内部でチェックするようにしても良いが…
+  - ドメイン的には認可は不変条件なのでServiceで処理するのが自然
+  - ただ、Service自体はユーザ関係なくバッチ処理などでシステム利用されるケースもある
+  - 今のところEndpoint側で認可の責務を持つほうが分かりやすく、汎用性が高いと考えている
+
+## Next.js / React
+
+### Parallel Routes / Intercept Routes
+
+- 非常に強力な機能なためうまく使えたら効果的
+- 特にParallel Routesはコンポーネントのネスト状況に依存せず、Server Componentとして切り出せるので、モーダルなど複雑なUIがでてきたときに非常に便利
+- ただし、ディレクトリ配置や `default.tsx` などの概念を理解するのが難しく、誰でも簡単に使えるわけではない、多用に注意
+
+### useMemo / useCallback
+
+- `useMemo` `useCallback` は利用禁止
+  - 将来的にReact Compoilerで自動的にパフォーマンス改善の対象となる
+  - また、ほとんどのケースでは利用しても体感パフォーマンスは変わらない
+  - なのにコード上は複雑性が上がる
+- 大量データかつ計算コストが高いと判断できるときだけ利用可能
+
+## Prisma
+
+- `$extends` は使用しない
+  - モデルオブジェクト相当の表現ができる強力な機能
+  - だが、拡張をしていくに連れ型推論が複雑になり、PrismaClientの取り回しが難しくなったりする
+  - 型パズルを頑張る必要が出てきて本質的じゃない壁がでてくるので利用しない
+
 ## TypeScript
 
 ### コードの書き方
@@ -108,3 +177,27 @@
 - `let` は極力使わない
   - もし `if-else` などで代入する値が違う場合は、処理を関数に切り出して `let` ではなく `const` にする
 - 型推論に頼らず、関数の返り値の型はなるべく明示する
+
+
+## テスト方針
+
+- 原則：モックは極力利用しない方針
+- Repository
+  - 本物のDBとデータを使ってテストする
+    - ただし、外部APIの場合はMSWを使ったモックを利用する
+  - テスト重要箇所：クエリロジックやSQLが正しいかチェック
+- Service
+  - 本物のDBとデータを使ってテストする
+  - Repositoryも本物の関数を呼び出す
+  - テスト重要箇所：ビジネスロジックの仕様を表現し、正常系・異常系をチェック
+  - 細かすぎるテストケースは作らず主要なテストケースに留める
+- ServerActions
+  - 本物のDBとデータを使ってテストする
+  - テスト重要箇所：パラメータチェック・認証認可・エラーハンドリング
+  - 細かすぎるテストケースは作らず主要なテストケースに留める
+- Component
+  - テストコードを書くかどうかは任意（迷っている）
+- 共通 UI Component
+  - Storybookを用意し、インタラクションテストを書く
+    - インタラクション要素が複雑でなければ書く必要はない
+  - ビジュアルリグレッションテストは導入する価値はある

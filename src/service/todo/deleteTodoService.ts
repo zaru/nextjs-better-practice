@@ -1,7 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { TodoRepository } from "@/repository/TodoRepository";
 
-export async function deleteTodoService(id: string): Promise<void> {
+interface Params {
+  id: string;
+}
+
+export async function deleteTodoService({ id }: Params): Promise<void> {
   return prisma.$transaction(async (tx) => {
     const todoRepo = new TodoRepository(tx);
 

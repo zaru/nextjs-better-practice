@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { TagRepository } from "@/repository/TagRepository";
-import type { Tag } from "@/types/todo";
+import { type Tag, TagRepository } from "@/repository/TagRepository";
 
 export async function fetchTagsService(): Promise<Tag[]> {
   const tagRepo = new TagRepository(prisma);

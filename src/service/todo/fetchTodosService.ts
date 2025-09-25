@@ -1,11 +1,19 @@
 import { prisma } from "@/lib/prisma";
-import { TodoRepository } from "@/repository/TodoRepository";
-import type { Todo, TodoFilter, TodoSort } from "@/types/todo";
+import {
+  type TodoListFilter,
+  type TodoListSort,
+  TodoRepository,
+  type TodoWithTags,
+} from "@/repository/TodoRepository";
 
-export async function fetchTodosService(
-  filter?: TodoFilter,
-  sort?: TodoSort,
-): Promise<Todo[]> {
+interface Params {
+  filter?: TodoListFilter;
+  sort?: TodoListSort;
+}
+export async function fetchTodosService({
+  filter,
+  sort,
+}: Params): Promise<TodoWithTags[]> {
   const todoRepo = new TodoRepository(prisma);
   return todoRepo.list(filter, sort);
 }
