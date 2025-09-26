@@ -54,7 +54,25 @@
   - UIとしてClientにせざるをえないケースではClient ComponentからDataFetchも例外で認め
     - 例：無限スクロール・続きを読む・並び替え
 
+### レイヤー構成図
+
 ![](layer.png)
+
+### ディレクトリ構成例
+
+- `/sample` ページの構成例
+  - ServerActionsは `_actions` ディレクトリに配置
+  - コンポーネントは `_components` ディレクトリに配置
+
+```
+app
+└── sample
+    ├── _actions
+    │   └── createSample.ts
+    ├── _components
+    │   └── CreateSampleForm.tsx
+    └── page.tsx
+```
 
 ### Repository
 
