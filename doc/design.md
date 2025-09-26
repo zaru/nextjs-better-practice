@@ -85,15 +85,24 @@ app
   - 関数を増やすのではなく汎用的なインターフェイスとする
   - また関連テーブルがあり、利用ケースとして結合したほうが良ければRepositoryでするのはOK
     - 例：ブログ記事のカテゴリ情報は、原則一緒に利用するのでarticleRepo().find()ではカテゴリをJOINして返す
-- Prismaの自動生成された型は利用せず、明示的にモデルの型定義をする
-  - 背景としては、DTOの役割も兼ねているため自動生成だと都度Omitする必要があり手間
-  - とはいえ悩み：Prisma型を利用するかどうか…
-    - https://www.prisma.io/docs/orm/prisma-client/type-safety
+- Prismaの自動生成された型はそのまま利用せず、必要なフィールドを明示的に指定する
+
+```ts
+// 必要なフィールドを明示的に指定
+const tagSelect = {
+  id: true,
+  name: true,
+} satisfies Prisma.TagSelect;
+
+// それを元に型情報を生成
+type Tag = Prisma.TagGetPayload<{ select: typeof tagSelect }>;
+```
+
 - RepositoryではPrismaのトランザクションオブジェクトを受け取り、それを利用する
   - Repository自身ではトランザクション管理はしない
   - トランザクションはServiceの責務
 - Repositoryは操作対象リソース単位のファイルとする
-  - 例：userRepo.ts / articleRepo.ts
+  - 例：UserRepository.ts / ArticleRepository.ts
 - 関数名は list / find / create / update / delete をベースとする
 - 効率を上げるために一括処理用の bulkCreate / bulkUpdate / bulkDelete などを作るのはOK
   - ただし、findById / findByEmail など関数が増え続けるような用途の狭い関数を作るのは禁止
