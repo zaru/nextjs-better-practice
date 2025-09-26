@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { TodoRepository } from "@/repository/TodoRepository";
+import { todoRepository } from "@/repository/TodoRepository";
 
 interface Params {
   id: string;
@@ -7,7 +7,7 @@ interface Params {
 
 export async function deleteTodoService({ id }: Params): Promise<void> {
   return prisma.$transaction(async (tx) => {
-    const todoRepo = new TodoRepository(tx);
+    const todoRepo = todoRepository({ tx });
 
     // TODOの存在確認
     const existingTodo = await todoRepo.find(id);

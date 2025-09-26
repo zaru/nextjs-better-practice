@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { type Tag, TagRepository } from "@/repository/TagRepository";
+import { type Tag, tagRepository } from "@/repository/TagRepository";
 
 interface Params {
   name: string;
@@ -7,7 +7,7 @@ interface Params {
 
 export async function createTagService(params: Params): Promise<Tag> {
   return prisma.$transaction(async (tx) => {
-    const tagRepo = new TagRepository(tx);
+    const tagRepo = tagRepository({ tx });
 
     // 同じ名前のタグが既に存在しないか確認
     const existingTag = await tagRepo.findByName(params.name);

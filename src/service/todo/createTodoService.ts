@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { TagRepository } from "@/repository/TagRepository";
-import { type Todo, TodoRepository } from "@/repository/TodoRepository";
+import { tagRepository } from "@/repository/TagRepository";
+import { type Todo, todoRepository } from "@/repository/TodoRepository";
 
 interface Params {
   content: string;
@@ -16,9 +16,10 @@ export async function createTodoService({
   tagIds,
 }: Params): Promise<Todo> {
   return prisma.$transaction(async (tx) => {
-    const todoRepo = new TodoRepository(tx);
-    const tagRepo = new TagRepository(tx);
+    const todoRepo = todoRepository({ tx });
+    const tagRepo = tagRepository({ tx });
 
+    // TODO: N+1問題の解消
     // タグIDが指定されている場合、存在確認
     if (tagIds && tagIds.length > 0) {
       for (const tagId of tagIds) {

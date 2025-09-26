@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { type Tag, TagRepository } from "@/repository/TagRepository";
+import { type Tag, tagRepository } from "@/repository/TagRepository";
 
 interface Params {
   id: string;
@@ -8,7 +8,7 @@ interface Params {
 
 export async function updateTagService({ id, name }: Params): Promise<Tag> {
   return prisma.$transaction(async (tx) => {
-    const tagRepo = new TagRepository(tx);
+    const tagRepo = tagRepository({ tx });
 
     // タグの存在確認
     const existingTag = await tagRepo.find(id);

@@ -2,8 +2,8 @@ import { prisma } from "@/lib/prisma";
 import {
   type TodoListFilter,
   type TodoListSort,
-  TodoRepository,
   type TodoWithTags,
+  todoRepository,
 } from "@/repository/TodoRepository";
 
 interface Params {
@@ -14,6 +14,6 @@ export async function fetchTodosService({
   filter,
   sort,
 }: Params): Promise<TodoWithTags[]> {
-  const todoRepo = new TodoRepository(prisma);
+  const todoRepo = todoRepository({ tx: prisma });
   return todoRepo.list(filter, sort);
 }

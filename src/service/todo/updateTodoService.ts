@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { TagRepository } from "@/repository/TagRepository";
+import { tagRepository } from "@/repository/TagRepository";
 import {
   type Todo,
-  TodoRepository,
   type TodoWithTags,
+  todoRepository,
 } from "@/repository/TodoRepository";
 
 interface Params {
@@ -21,8 +21,8 @@ export async function updateTodoService({
   tagIds,
 }: Params): Promise<TodoWithTags> {
   return prisma.$transaction(async (tx) => {
-    const todoRepo = new TodoRepository(tx);
-    const tagRepo = new TagRepository(tx);
+    const todoRepo = todoRepository({ tx });
+    const tagRepo = tagRepository({ tx });
 
     // TODOの存在確認
     const existingTodo = await todoRepo.find(id);

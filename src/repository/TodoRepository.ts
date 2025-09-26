@@ -1,4 +1,9 @@
-import type { Prisma, PrismaClient } from "@/generated/prisma";
+import { z } from "zod";
+import {
+  type Prisma,
+  type PrismaClient,
+  TodoStatus as TodoStatusObject,
+} from "@/generated/prisma";
 import type { PrismaTransaction } from "@/lib/prisma";
 import { type Tag, tagSelect } from "@/repository/TagRepository";
 
@@ -36,14 +41,16 @@ export type TodoListSort = {
   order: Prisma.SortOrder;
 };
 
-export class TodoRepository {
-  constructor(private readonly tx: PrismaClient | PrismaTransaction) {}
-
-  async list(
+export const todoRepository = ({
+  tx,
+}: {
+  tx: PrismaClient | PrismaTransaction;
+}) => ({
+  list: async (
     filter?: TodoListFilter,
     sort?: TodoListSort,
-  ): Promise<TodoWithTags[]> {
-    const todos = await this.tx.todo.findMany({
+  ): Promise<TodoWithTags[]> => {
+    const todos = await tx.todo.findMany({
       select: todoWithTagsSelect,
       where: {
         ...(filter?.keyword && {
@@ -58,10 +65,10 @@ export class TodoRepository {
     });
 
     return todos.map((todo) => transformTodoWithTags(todo));
-  }
+  },
 
-  async find(id: string): Promise<TodoWithTags | null> {
-    const todoWithTag = await this.tx.todo.findUnique({
+  find: async (id: string): Promise<TodoWithTags | null> => {
+    const todoWithTag = await tx.todo.findUnique({
       select: todoWithTagsSelect,
       where: { id },
     });
@@ -69,14 +76,14 @@ export class TodoRepository {
     if (!todoWithTag) return null;
 
     return transformTodoWithTags(todoWithTag);
-  }
+  },
 
-  async create(
+  create: async (
     input: Pick<Prisma.TodoCreateInput, "content" | "status" | "dueDate"> & {
       tagIds?: string[];
     },
-  ): Promise<TodoWithTags> {
-    const todoWithTag = await this.tx.todo.create({
+  ): Promise<TodoWithTags> => {
+    const todoWithTag = await tx.todo.create({
       data: {
         content: input.content,
         ...(input.status && { status: input.status }),
@@ -87,22 +94,22 @@ export class TodoRepository {
     });
 
     return transformTodoWithTags(todoWithTag);
-  }
+  },
 
-  async update(
+  update: async (
     id: string,
     input: Pick<Prisma.TodoUpdateInput, "content" | "status" | "dueDate"> & {
       tagIds?: string[];
     },
-  ): Promise<TodoWithTags> {
+  ): Promise<TodoWithTags> => {
     // タグの関連付けを更新する場合は、まず既存の関連を削除
     if (input.tagIds !== undefined) {
-      await this.tx.todoTag.deleteMany({
+      await tx.todoTag.deleteMany({
         where: { todoId: id },
       });
     }
 
-    const todoWithTag = await this.tx.todo.update({
+    const todoWithTag = await tx.todo.update({
       where: { id },
       data: {
         ...(input.content !== undefined && { content: input.content }),
@@ -114,14 +121,14 @@ export class TodoRepository {
     });
 
     return transformTodoWithTags(todoWithTag);
-  }
+  },
 
-  async delete(id: string): Promise<void> {
-    await this.tx.todo.delete({
+  delete: async (id: string): Promise<void> => {
+    await tx.todo.delete({
       where: { id },
     });
-  }
-}
+  },
+});
 
 /**
  * ToDo作成・更新時に、指定のタグ一覧との関連付けを一緒に作成するデータ整形
@@ -139,6 +146,7 @@ function associateTags(tagIds: string[]) {
 
 /**
  * ToDoとタグの結合データを使いやすいように構造を変更する
+ * TODO: これは…ビジネスロジックか？いや違うよな…？
  */
 function transformTodoWithTags(
   todoWithTag: Prisma.TodoGetPayload<{ select: typeof todoWithTagsSelect }>,

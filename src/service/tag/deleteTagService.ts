@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import { TagRepository } from "@/repository/TagRepository";
+import { tagRepository } from "@/repository/TagRepository";
 
 interface Params {
   id: string;
 }
 export async function deleteTagService({ id }: Params): Promise<void> {
   return prisma.$transaction(async (tx) => {
-    const tagRepo = new TagRepository(tx);
+    const tagRepo = tagRepository({ tx });
 
     // タグの存在確認
     const existingTag = await tagRepo.find(id);
