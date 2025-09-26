@@ -2,26 +2,59 @@
 
 このドキュメントはNext.jsを使った開発をする際に、ガイドラインを示すことで開発チームの中で書き方のばらつきを抑え、保守性を保つことを目的としています。ベストな設計を追求するよりも現実的な利益を得られるバランスを目指しています。
 
-## 前提
+## ライブラリ
 
-以下のライブラリを組み合わせて開発する
+今回のリポジトリでは以下のライブラリを利用する
 
-- Prisma
-- Zod
+- Prisma（Drizzleでも良い）
+- Zod（Valibotでも良い）
+
+### 推奨ライブラリ
+
+- UI
+  - React Aria Component
+  - Storybook
+  - Tailwind CSS
+- 認証
+  - Better Auth
+  - もしくはAuth0
+- Worker
+  - BullMQ
+- テスト
+  - Vitest
+  - MSW
+- Linter / Formatter
+  - Biome
+  - SecretLint
+- その他
+  - dotenvx
+  - T3-Env
+  - pino + next-logger
+
+### ライブラリ選定
+
+- 依存ライブラリ数は少なくなるよう努力する
+  - 依存が少ないと保守コストの削減とセキュリティリスクの低減になる
+- ちょっとした機能であればライブラリではなく自前で用意する
+- ただし複雑であり再発明と保守コストが高い場合はライブラリを使う
+  - 例：高機能UIライブラリ
 
 ## レイヤー方針
 
-データを中心としたレイヤーは主に2階層にする
+- データを中心としたレイヤーは主に2階層にする
 
-- Repository
-- Service ( or UserCase )
+  - Repository
 
-また、データ操作 ( Mutation / DataFetch ) を行うのは以下の2つ
+  - Service ( or UserCase )
 
-- MutationはServer Actions
-- DataFetchはServer Component
-  - UIとしてClientにせざるをえないケースではClient ComponentからDataFetchも例外で認める
-  - 例：無限スクロール・続きを読む・並び替え
+- データ操作 ( Mutation / DataFetch ) を行うのは以下の2つ
+
+  - MutationはServer Actions
+  - DataFetchはServer Component
+  - UIとしてClientにせざるをえないケースではClient ComponentからDataFetchも例外で認め
+    - 例：無限スクロール・続きを読む・並び替え
+
+![](layer.png)
 
 ### Repository
 
@@ -100,10 +133,10 @@
 
 ### ディレクトリ構成・ファイル名
 
-- Co-locationの考え方を尊重する
-  - 使うものは近い場所に配置する
-  - Server Actionsは利用しているページの `_actions` ディレクトリに配置する
-  - 部品コンポーネントは利用しているページの `_components` ディレクトリに配置する
+- Colocationの考え方を尊重する
+  - 1つの画面（機能）で使うファイルは、同じ場所に配置する
+  - Server Actionsは `_actions` ディレクトリに配置する
+  - コンポーネントは `_components` ディレクトリに配置する
     - もし、複数の画面で利用するようなケースがあれば、トップディレクトリ `src/components` に配置する
   - このルールはRepositoryとServiceは該当しない（この2つはトップディレクトリ配置）
 - ファイル名は関数名と同じにする
@@ -128,6 +161,45 @@
 - `useState` `useEffect` `useRef` を書かざるをえないときは立ち止まって設計を見直す
   - 素朴な処理であれば書かずとも表現できることが多い
   - ただし、使うのが悪ではないので必要であればOK
+
+### レイアウト用コンポーネント
+
+- 一つの単位のでレイアウトを複数のコンポーネントで表現する時の作法
+  - 例えばカードやページレイアウトなど
+- `<Card>` という親をトップに、`<Card.Header>` `<Card.Content>` など子を用意する
+
+```tsx
+<Card>
+  <Card.Header>Card</Card.Header>
+  <Card.Content>Content</Card.Content>
+</Card>
+```
+
+- `renderProps` は使っても良いが、基本はコンポーネントを分割してレイアウトさせる
+
+```tsx
+// renderPropsの多用は避ける（禁止ではない）
+<Card title={<div>Card</div>} content={<div>Content</div>} />
+```
+
+- レイアウトする際にはTypeScriptのNameSpace機能を使う
+  - NameSapaceを使うことでIDEでコード移動がサポートされる
+
+```tsx
+export function Card(){}
+export namespace Card {
+  export function Header(){}
+  export function Content(){}
+}
+```
+
+### コンポーネントのスタイリング
+
+- 原則、共通UIコンポーネントにスタイリングは任せる
+  - 似てるけど微妙に異なるデザインがあったら、デザイナーと相談し統一する
+  - その場所でしか使わないデザインに限り、その場でスタイリング可能
+- 共通UIコンポーネントの拡張スタイルは閉じるのを原則とする
+  - 共通UIコンポーネントに外部から自由にスタイルを拡張できると制御不能になる
 
 ## 認証・認可
 
@@ -174,9 +246,18 @@
 
 ### コードの書き方
 
-- `let` は極力使わない
+- 型推論に頼らず型は明示的に書くようにする
+  - 特に関数の返り値は明示的に書くことで意図せぬ不具合を予防できる
+  - 変数定義の型指定もしたほうが良いが、明らかな場合は省略して良い
+    - 例： `const foo = 'string'` こういうのはしなくてよい
+    - 複雑なオブジェクトの場合は `satisfies` の利用もする
+
+- `class` は禁止
+  - classを使い始めると状態管理をしたくなってしまう
+  - ステートレスなWebアプリにおいて状態管理が有効なシーンは限定的
+
+- `let` は禁止
   - もし `if-else` などで代入する値が違う場合は、処理を関数に切り出して `let` ではなく `const` にする
-- 型推論に頼らず、関数の返り値の型はなるべく明示する
 
 
 ## テスト方針
@@ -195,8 +276,9 @@
   - 本物のDBとデータを使ってテストする
   - テスト重要箇所：パラメータチェック・認証認可・エラーハンドリング
   - 細かすぎるテストケースは作らず主要なテストケースに留める
-- Component
-  - テストコードを書くかどうかは任意（迷っている）
+- 普通のComponent
+  - テストコードを書くべきかどうかは迷っている
+  - E2Eテストでカバーしたほうが良い気はしているがE2Eテストケースが増えるのは避けたい…
 - 共通 UI Component
   - Storybookを用意し、インタラクションテストを書く
     - インタラクション要素が複雑でなければ書く必要はない
