@@ -63,9 +63,12 @@
 - `/sample` ページの構成例
   - ServerActionsは `_actions` ディレクトリに配置
   - コンポーネントは `_components` ディレクトリに配置
+- 全体で利用するコンポーネントは `src/components` に配置
 
 ```
 app
+└── components
+    └── Card.tsx
 └── sample
     ├── _actions
     │   └── createSample.ts
