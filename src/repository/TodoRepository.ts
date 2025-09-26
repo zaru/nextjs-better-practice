@@ -28,6 +28,16 @@ const todoWithTagsSelect = {
 export type Todo = Prisma.TodoGetPayload<{ select: typeof todoSelect }>;
 export type TodoWithTags = Todo & { tags: Tag[] };
 
+const TodoStatus = Object.values(TodoStatusObject);
+
+const listWithTagNamesSchema = z.object({
+  id: z.string().min(1),
+  content: z.string().min(1),
+  status: z.enum(TodoStatus),
+  tag_names: z.string(),
+});
+type ListWithTagNames = z.infer<typeof listWithTagNamesSchema>;
+
 export type TodoListFilter = {
   keyword?: string;
   status?: Todo["status"][];
@@ -65,6 +75,33 @@ export const todoRepository = ({
     });
 
     return todos.map((todo) => transformTodoWithTags(todo));
+  },
+
+  /**
+   * PrismaのqueryRawを使ったサンプル
+   * 必ずZodでパースをした上で返すようにする
+   * 現時点ではTypedSQLは利用しない（型生成にDBが必要なため面倒）
+   */
+  listWithTags: async (): Promise<ListWithTagNames[]> => {
+    const result = await tx.$queryRaw`
+      SELECT t.id,
+             t.content,
+             t.status,
+             COALESCE(GROUP_CONCAT(g.name, ','), '') AS tag_names
+      FROM todos t
+               LEFT JOIN
+           todo_tags tt
+           ON tt.todoId = t.id
+               LEFT JOIN
+           tags g
+           ON g.id = tt.tagId
+      GROUP BY t.id;
+    `;
+    const parsed = listWithTagNamesSchema.array().safeParse(result);
+    if (!parsed.success) {
+      return [];
+    }
+    return parsed.data;
   },
 
   find: async (id: string): Promise<TodoWithTags | null> => {
