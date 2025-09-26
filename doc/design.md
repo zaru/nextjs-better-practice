@@ -30,6 +30,7 @@
   - dotenvx
   - T3-Env
   - pino + next-logger
+  - Sentry
 
 ### ライブラリ選定
 
