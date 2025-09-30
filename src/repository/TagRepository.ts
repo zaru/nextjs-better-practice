@@ -13,13 +13,22 @@ export const tagRepository = ({
 }: {
   tx: PrismaClient | PrismaTransaction;
 }) => ({
-  list: async (): Promise<Tag[]> => {
+  list: async (options?: { page?: number; take?: number }): Promise<Tag[]> => {
     return tx.tag.findMany({
       select: tagSelect,
       orderBy: {
         name: "asc",
       },
+      skip:
+        options?.page && options?.take
+          ? (options.page - 1) * options.take
+          : undefined,
+      take: options?.take,
     });
+  },
+
+  count: async (): Promise<number> => {
+    return tx.tag.count();
   },
 
   find: async (id: string): Promise<Tag | null> => {

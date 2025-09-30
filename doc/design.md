@@ -43,17 +43,16 @@
 ## レイヤー方針
 
 - データを中心としたレイヤーは主に2階層にする
-
   - Repository
-
   - Service ( or UserCase )
-
 - データ操作 ( Mutation / DataFetch ) を行うのは以下の2つ
-
   - MutationはServer Actions
   - DataFetchはServer Component
   - UIとしてClientにせざるをえないケースではClient ComponentからDataFetchも例外で認め
     - 例：無限スクロール・続きを読む・並び替え
+- DDDやClean Architecture由来のアーキテクチャは目指さない
+  - ただし実利性が高い要素は取り込む
+
 
 ### レイヤー構成図
 
@@ -61,21 +60,26 @@
 
 ### ディレクトリ構成例
 
-- `/sample` ページの構成例
+- `/tag` ページの構成例
   - ServerActionsは `_actions` ディレクトリに配置
   - コンポーネントは `_components` ディレクトリに配置
 - 全体で利用するコンポーネントは `src/components` に配置
 
 ```
-app
-└── components
-    └── Card.tsx
-└── sample
-    ├── _actions
-    │   └── createSample.ts
-    ├── _components
-    │   └── CreateSampleForm.tsx
-    └── page.tsx
+src
+├── components
+│   └── Card.tsx
+├── repositories
+│   └── TagRepository.ts
+├── services  
+│   └── createTagService.ts
+└── app
+    └── tag
+        ├── _actions
+        │   └── createTag.ts
+        ├── _components
+        │   └── CreateTagForm.tsx
+        └── page.tsx
 ```
 
 ### Repository
@@ -104,15 +108,14 @@ type Tag = Prisma.TagGetPayload<{ select: typeof tagSelect }>;
   - トランザクションはServiceの責務
 - Repositoryは操作対象リソース単位のファイルとする
   - 例：UserRepository.ts / ArticleRepository.ts
-- 関数名は list / find / create / update / delete をベースとする
-- 効率を上げるために一括処理用の bulkCreate / bulkUpdate / bulkDelete などを作るのはOK
-  - ただし、findById / findByEmail など関数が増え続けるような用途の狭い関数を作るのは禁止
-  - なるべく汎用性の高い関数として設計をする
-    - 例外として複雑度が上がるようであれば適宜関数を分割すること
+- 関数名は list / count / find / create / update / delete をベースとする
+  - 効率を上げるために一括処理用の bulkCreate / bulkUpdate / bulkDelete などを作るのはOK
+  - ただし、updateName / updateDescription など関数が増え続けるような用途の狭い関数を作るのは禁止
+    - なるべく汎用性の高い関数として設計をし、専用処理はServiceに任せる
+    - 例外として汎用性をあげた結果、関数の複雑度が上がるようであれば専用の関数を用意して良い
 - Prismaの `$queryRaw` でSQLを直接実行することもOK
   - その場合、必ず返り値をZodでパースすること
   - また実データを使ったテストコードも必ず書くこと
-
 
 ### Service
 
@@ -123,6 +126,10 @@ type Tag = Prisma.TagGetPayload<{ select: typeof tagSelect }>;
   - 例：createUserService.ts / deleteArticleService.ts
   - また、ファイル名・関数名の最後にはServiceというSuffixを加える
 - 関数名はユースケースとして分かりやすい命名にする（長すぎるのは駄目）
+
+#### この方針におけるビジネスロジックとは何か
+
+- ここでは一般論ではなく、この設計方針におけるビジネスロジックの定義を行う
 
 ### Mutation: ServerActions
 
@@ -282,14 +289,15 @@ export namespace Card {
   - 変数定義の型指定もしたほうが良いが、明らかな場合は省略して良い
     - 例： `const foo = 'string'` こういうのはしなくてよい
     - 複雑なオブジェクトの場合は `satisfies` の利用もする
-
 - `class` は禁止
   - classを使い始めると状態管理をしたくなってしまう
   - ステートレスなWebアプリにおいて状態管理が有効なシーンは限定的
-
 - `let` は禁止
   - もし `if-else` などで代入する値が違う場合は、処理を関数に切り出して `let` ではなく `const` にする
 
+### BrandedTypesは使わない
+
+- BrandedTypesを活用し、型の安全性を高めたいがPrisma含めて統一させるのが難しい気がするので採用しない
 
 ## テスト方針
 
