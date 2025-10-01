@@ -72,4 +72,30 @@ export const tagRepository = ({
       where: { id },
     });
   },
+
+  findManyByNames: async (names: string[]): Promise<Tag[]> => {
+    return tx.tag.findMany({
+      select: tagSelect,
+      where: {
+        name: { in: names },
+      },
+    });
+  },
+
+  bulkCreate: async (
+    inputs: Pick<Prisma.TagCreateInput, "name">[],
+  ): Promise<Prisma.BatchPayload> => {
+    return tx.tag.createMany({
+      data: inputs,
+    });
+  },
+
+  bulkCreateAndReturn: async (
+    inputs: Pick<Prisma.TagCreateInput, "name">[],
+  ): Promise<Tag[]> => {
+    return tx.tag.createManyAndReturn({
+      data: inputs,
+      select: tagSelect,
+    });
+  },
 });
