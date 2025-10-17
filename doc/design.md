@@ -410,6 +410,26 @@ function hasPermission(params: {
 
 ## Next.js / React ベストプラクティス
 
+### Client ComponentのPropsに余計なデータを渡さない
+
+- Client ComponentのPropsはHTMLソースコード上に出力される
+  - コンポーネント内部で使っていなくても問答無用で出力される
+- セキュリティに悪影響がある
+  - 秘匿情報がPropsに含まれていた場合、情報漏洩してしまう
+- パフォーマンスに悪影響がある
+  - Client Componentは原則SSRされるので、PropsのPayloadに加え、レンダリング済みのHTMLも配信される
+  - つまりPropsが二重のデータとして配信されることになるので、無駄なネットワークと読み込み処理が発生する
+
+#### 対策
+
+- Propsには本当に必要なデータのみ渡す
+  - DTO層を設けて、必要なデータだけを抽出する（この設計例だとRepositoryで定義しておく）
+- Client Componentにする必要がなければしない
+  - Client ComponentのChildrenにServer Componentを渡すテクニックなどを活用
+  - e.g. `<ClientComponent><ServerComponent props={Data} /></ClientComponent>`
+- Client Componentの表示の仕方を工夫する
+  - いきなり全データを表示するのではなく、無限スクロールやページングなど遅延読込できる仕様にする 
+
 ### Parallel Routes / Intercept Routes
 
 高度なルーティング機能だが、使用は慎重に判断すること。
@@ -429,17 +449,15 @@ function hasPermission(params: {
 
 ### useMemo / useCallback
 
+- React Compilerが自動的に最適化するため、原則使用禁止とする
+  - Next.js v16以降対応
+
 #### 原則: 使用禁止
 
 | 理由               | 説明                                         |
 | ------------------ | -------------------------------------------- |
-| React Compiler対応 | 将来的に自動最適化される                     |
 | 体感効果の低さ     | ほとんどのケースで体感パフォーマンスは変わらない |
 | 複雑性の増加       | コードの可読性が下がる                       |
-
-#### 例外: 使用可能なケース
-
-大量データかつ計算コストが明らかに高い場合のみ使用可能。
 
 ## Prisma
 
